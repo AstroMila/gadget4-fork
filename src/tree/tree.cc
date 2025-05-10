@@ -1269,16 +1269,16 @@ void tree<node, partset, point_data, foreign_point_data>::treefree(void)
             }
         }
 
-      Mem.myfree(TreeSharedMemBaseAddr);
+      Mem.myfree_movable(TreeSharedMemBaseAddr);
 
-      Mem.myfree(TreePS_offsets);
-      Mem.myfree(TreeSphP_offsets);
-      Mem.myfree(TreeP_offsets);
-      Mem.myfree(TreeForeign_Points_offsets);
-      Mem.myfree(TreeForeign_Nodes_offsets);
-      Mem.myfree(TreeNextnode_offsets);
-      Mem.myfree(TreePoints_offsets);
-      Mem.myfree(TreeNodes_offsets);
+      Mem.myfree_movable(TreePS_offsets);
+      Mem.myfree_movable(TreeSphP_offsets);
+      Mem.myfree_movable(TreeP_offsets);
+      Mem.myfree_movable(TreeForeign_Points_offsets);
+      Mem.myfree_movable(TreeForeign_Nodes_offsets);
+      Mem.myfree_movable(TreeNextnode_offsets);
+      Mem.myfree_movable(TreePoints_offsets);
+      Mem.myfree_movable(TreeNodes_offsets);
 
       Mem.myfree_movable(Recv_offset);
       Mem.myfree_movable(Recv_count);
