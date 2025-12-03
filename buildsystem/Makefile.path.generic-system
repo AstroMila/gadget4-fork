@@ -1,0 +1,8 @@
+GSL_INCL   = -I/usr/include
+GSL_LIBS   = -L/usr/lib/x86_64-linux-gnu
+FFTW_INCL  = -I/usr/include
+FFTW_LIBS  = -L/usr/lib/x86_64-linux-gnu
+HDF5_INCL  = -I/usr/include/hdf5/serial
+HDF5_LIBS  = -L/usr/lib/x86_64-linux-gnu/hdf5/serial
+HWLOC_INCL = -I/usr/include
+HWLOC_LIBS = -L/usr/lib/x86_64-linux-gnu
