@@ -1,5 +1,5 @@
 %----  Relevant files 
-InitCondFile        /u/vrs/Simulations/ICs/ExampleICs/ics_collision_g4.dat
+InitCondFile        ../../ExampleICs/ics_collision_g4.dat
 OutputDir           ./output
 SnapshotFileBase    snapshot
 OutputListFilename  empty.txt
@@ -10,11 +10,11 @@ ICFormat           1
 SnapFormat         3 
 
 %---- CPU-time limits
-TimeLimitCPU              90000  % in seconds
+TimeLimitCPU              200000  % in seconds (55.6 hours)
 CpuTimeBetRestartFile     7200    % in seconds
 
 %----- Memory alloction
-MaxMemSize        4000
+MaxMemSize        6000
 
 %---- Caracteristics of run
 TimeBegin           0.0        % Begin of the simulation
