@@ -1,0 +1,31 @@
+# Library paths for HPC ATOS Kragujevac
+# INSTRUCTIONS: Replace these paths with actual module locations
+# Run: module load openmpi hdf5 gsl fftw3 hwloc
+# Then find paths with: module show <modulename>
+
+# GSL paths (GNU Scientific Library)
+GSL_INCL   = -I/path/to/gsl/include
+GSL_LIBS   = -L/path/to/gsl/lib
+
+# FFTW3 paths (Fast Fourier Transform)
+FFTW_INCL  = -I/path/to/fftw3/include
+FFTW_LIBS  = -L/path/to/fftw3/lib
+
+# HDF5 paths (Hierarchical Data Format)
+HDF5_INCL  = -I/path/to/hdf5/include
+HDF5_LIBS  = -L/path/to/hdf5/lib
+
+# HWLOC paths (Hardware Locality)
+HWLOC_INCL = -I/path/to/hwloc/include
+HWLOC_LIBS = -L/path/to/hwloc/lib
+
+# COMMON LOCATIONS ON HPC SYSTEMS:
+# - /usr/local/lib, /usr/local/include
+# - /opt/software/<package>/lib, /opt/software/<package>/include
+# - $HOME/.local/lib, $HOME/.local/include (if you built yourself)
+# - Module-set variables: $HDF5_DIR, $GSL_DIR, etc.
+
+# HOW TO FIND PATHS:
+# 1. module show hdf5  # Shows paths set by module
+# 2. find /opt -name "libhdf5.so" 2>/dev/null  # Search for libraries
+# 3. pkg-config --cflags --libs hdf5  # If pkg-config available
