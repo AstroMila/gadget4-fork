@@ -67,15 +67,7 @@ cd ~/projects/Gadget4/mila
 echo 'SYSTYPE="HPC-ATOS"' > Makefile.systype
 ```
 
-**Edit Makefile** (add after line 110):
-```bash
-nano Makefile
-# Add these lines after the Generic-gcc block:
-ifeq ($(SYSTYPE),"HPC-ATOS")
-include buildsystem/Makefile.path.hpc-atos
-include buildsystem/Makefile.comp.gcc
-endif
-```
+**Note:** The Makefile already includes the HPC-ATOS configuration block (no manual editing needed).
 
 ### 4. Transfer Initial Conditions
 
@@ -108,7 +100,7 @@ cp Gadget4 examples/CollidingGalaxiesSFR/
 
 ## Interactive Test Run (Quick Test)
 
-Use this to verify everything works before submitting long jobs.
+Use this to verify everything works before submitting long jobs. A test configuration file `param_shortTest.txt` is provided in the repository with `TimeLimitCPU=60` (1 minute).
 
 ### 1. Request Interactive Session
 ```bash
@@ -124,7 +116,7 @@ module load openmpi/gcc/64/1.10.7 hdf5/1.10.1 fftw3/openmpi/gcc/64/3.3.8 hwloc/1
 # Navigate to example
 cd ~/projects/Gadget4/mila/examples/CollidingGalaxiesSFR
 
-# Run 1-minute test (make sure param.txt has TimeLimitCPU=60)
+# Run 1-minute test using provided test configuration
 mpirun -np 16 ./Gadget4 param_shortTest.txt
 ```
 
@@ -135,50 +127,27 @@ exit
 
 ## Production SLURM Jobs
 
+The repository includes a working SLURM job script (`job_hpc_slurm.sh`) with auto-restart detection. Customize the module names for your specific HPC system.
+
 ### Configuration Files
 
-**param.txt** (production settings):
+**param.txt** (production settings - adjust for your hardware):
 ```
 TimeLimitCPU              259200  # 3 days in seconds
 MaxMemSize                15000   # MB per process (for 64 processes)
-```
+```already in repository - customize module names):
 
-**job_hpc_slurm.sh** (SLURM job script):
-```bash
-#!/bin/bash
-#SBATCH --job-name=galaxy_collision
-#SBATCH --nodes=1
-#SBATCH --ntasks=64              # 64 MPI processes
-#SBATCH --time=72:00:00          # 3 days
-#SBATCH --partition=defq
-#SBATCH --output=run_%j.log
+The script includes:
+- Auto-restart detection (checks for restart files)
+- Configurable resources (`--ntasks`, `--time`, `--partition`)
+- Module loading (adjust module names/versions for your system)
+- GSL library path setup
 
-# Add GSL to library path
-export LD_LIBRARY_PATH=$HOME/local/lib:$LD_LIBRARY_PATH
-
-# Load required modules
-module purge
-module load openmpi/gcc/64/1.10.7
-module load hdf5/1.10.1
-module load fftw3/openmpi/gcc/64/3.3.8
-module load hwloc/1.11.11
-
-# Show loaded modules
-module list
-
-# Set working directory
-cd $SLURM_SUBMIT_DIR
-
-# Auto-detect restart
-if [ -f "output/restartfiles/restart.0" ]; then
-    echo "=== Restarting from checkpoint at $(date) ==="
-    RESTART_FLAG=1
-else
-    echo "=== Starting new simulation at $(date) ==="
-    RESTART_FLAG=0
-fi
-
-# Run simulation
+**Key parameters to adjust:**
+- `--ntasks`: Number of MPI processes (16, 32, 64, 128, etc.)
+- `--time`: Maximum job duration (match your HPC limits)
+- `--partition`: Your HPC partition name
+- Module versions: Adjust to match your HPC's available modulesun simulation
 mpirun -np $SLURM_NTASKS ./Gadget4 param.txt $RESTART_FLAG
 ```
 
@@ -205,8 +174,14 @@ The job script auto-detects restarts. If the simulation hits the time limit:
 ```bash
 # Just resubmit - it will automatically continue from checkpoint
 sbatch job_hpc_slurm.sh
-```
+```Customizing and Submitting Jobs
 
+**Before first submission:**
+1. Edit `job_hpc_slurm.sh` - verify module names match your system
+2. Edit `param.txt` - set `TimeLimitCPU` and `MaxMemSize` for your resources
+3. Check `--partition` name matches your HPC (use `sinfo` to verify)
+
+**Submit:**
 **Important:** Always use the **same number of processes** for restarts as the original run.
 
 ## Monitoring Progress
