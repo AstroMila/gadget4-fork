@@ -1,28 +1,35 @@
 #!/bin/bash
 #SBATCH --job-name=galaxy_collision
 #SBATCH --nodes=1
-#SBATCH --ntasks=16              # Use 16 MPI processes (adjust based on HPC)
-#SBATCH --time=48:00:00           # 48 hours (adjust to HPC limits)
-#SBATCH --mem=64G                 # Total memory (adjust based on HPC)
-#SBATCH --partition=compute       # Check HPC partition names
-#SBATCH --output=run_%j.log       # %j = job ID
+#SBATCH --ntasks=64
+#SBATCH --time=72:00:00
+#SBATCH --partition=defq
+#SBATCH --output=run_%j.log
 
-# Load required modules
+# Add GSL to library path (if installed in home directory)
+export LD_LIBRARY_PATH=$HOME/local/lib:$LD_LIBRARY_PATH
+
+# Load required modules (adjust for your HPC system)
 module purge
-module load openmpi/4.1.6         # Adjust versions
-module load hdf5/1.10.10
-module load gsl/2.7
-module load fftw3/3.3.10
-module load hwloc/2.9.0
+module load openmpi/gcc/64/1.10.7
+module load hdf5/1.10.1
+module load fftw3/openmpi/gcc/64/3.3.8
+module load hwloc/1.11.11
 
-# Show loaded modules for debugging
+# Show loaded modules
 module list
 
 # Set working directory
 cd $SLURM_SUBMIT_DIR
 
-# For initial run:
-mpirun -np $SLURM_NTASKS ./Gadget4 param.txt
+# Auto-detect restart
+if [ -f "output/restartfiles/restart.0" ]; then
+    echo "=== Restarting from checkpoint at $(date) ==="
+    RESTART_FLAG=1
+else
+    echo "=== Starting new simulation at $(date) ==="
+    RESTART_FLAG=0
+fi
 
-# For restart:
-# mpirun -np $SLURM_NTASKS ./Gadget4 param.txt 1
+# Run simulation
+mpirun -np $SLURM_NTASKS ./Gadget4 param.txt $RESTART_FLAG

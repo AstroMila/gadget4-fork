@@ -109,6 +109,10 @@ ifeq ($(SYSTYPE),"Generic-gcc")
 include buildsystem/Makefile.path.generic-system
 include buildsystem/Makefile.comp.gcc
 endif
+ifeq ($(SYSTYPE),"HPC-ATOS")
+include buildsystem/Makefile.path.hpc-atos
+include buildsystem/Makefile.comp.gcc
+endif
 ifeq ($(SYSTYPE),"Generic-intel")
 include buildsystem/Makefile.comp.gcc-paranoia
 include buildsystem/Makefile.gen.libs
