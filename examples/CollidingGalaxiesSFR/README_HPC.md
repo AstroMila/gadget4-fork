@@ -10,6 +10,54 @@ This guide covers running the CollidingGalaxiesSFR example on HPC ATOS Kragujeva
 - **Scheduler:** SLURM
 - **Max job time:** 3 days (72 hours)
 
+## Connecting to HPC via VirtualBox (Recommended)
+
+If your HPC requires VPN access that conflicts with regular internet usage, using VirtualBox provides an isolated environment.
+
+### Why VirtualBox?
+
+**Use case:** HPC centers often require VPN connections that:
+- Block regular internet access on the host machine
+- Prevent using web browsers, documentation, or AI assistants
+- Isolate all network traffic to the HPC network only
+
+**Solution:** Run VPN and SSH inside a VirtualBox VM:
+- **Host machine:** Keeps normal internet, browser, AI tools (like GitHub Copilot)
+- **Virtual machine:** Connects to VPN and HPC exclusively
+- **Shared folder:** Transfer files between host and VM easily
+
+### Recommended Setup
+
+**VirtualBox Version:** 7.0.x LTS (Long Term Support) - **Oracle version recommended**
+- Download from Oracle: https://www.virtualbox.org/wiki/Downloads
+- Choose your host OS version
+- **Important:** Use Oracle's official packages, not Ubuntu repository packages
+- Ubuntu's VirtualBox packages can break kernel modules during system updates
+
+**Guest OS:** Ubuntu 22.04 LTS or 24.04 LTS
+- Minimal installation sufficient (just need terminal + VPN client)
+- Allocate: 2-4 GB RAM, 20 GB disk
+
+**Configuration:**
+1. Install VirtualBox 7.0.x on your host machine
+2. Create Ubuntu VM (minimal installation)
+3. Set up shared folder for file transfers
+4. Install VPN client inside VM
+5. SSH to HPC from within VM
+
+**Benefits:**
+- Continue using documentation, AI assistance, web on host
+- VM handles VPN isolation
+- Easy file transfer via shared folders
+- Host system stays clean and stable
+
+**Note:** After host system updates, you may need to rebuild VirtualBox kernel modules:
+```bash
+sudo /sbin/vboxconfig
+```
+
+For detailed VirtualBox setup instructions, consult the VirtualBox documentation or ask for assistance.
+
 ## Initial Setup (One-time)
 
 ### 1. Clone Repository
