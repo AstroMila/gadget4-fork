@@ -46,7 +46,7 @@ def load_snapshot(filename):
         
     return data
 
-def create_animation(output_dir='output', save_file='galaxy_collision.mp4', fps=2):
+def create_animation(output_dir='../output', save_file='results/allstars/galaxy_collision.mp4', fps=2):
     """Create animation from all snapshots"""
     
     # Find all snapshot files
@@ -158,7 +158,7 @@ def create_animation(output_dir='output', save_file='galaxy_collision.mp4', fps=
     
     print("\nDone!")
 
-def create_static_frames(output_dir='output', frames_dir='frames'):
+def create_static_frames(output_dir='../output', frames_dir='results/allstars/frames'):
     """Create static PNG images for each snapshot"""
     
     # Create frames directory
@@ -240,8 +240,8 @@ if __name__ == '__main__':
     print("=" * 60)
     
     # Check if output directory exists
-    if not os.path.exists('output'):
-        print("Error: output/ directory not found")
+    if not os.path.exists('../output'):
+        print("Error: ../output/ directory not found")
         sys.exit(1)
     
     # Create static frames (always works)

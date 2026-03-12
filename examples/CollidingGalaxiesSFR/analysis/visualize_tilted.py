@@ -74,7 +74,7 @@ def load_snapshot(filename):
         
     return data
 
-def create_animation(output_dir='../output', save_file='tilted_view.mp4', fps=2, 
+def create_animation(output_dir='../output', save_file='results/tilted_view/tilted_view.mp4', fps=2, 
                     angle_x=30, angle_z=20):
     """Create animation from tilted perspective"""
     
@@ -197,7 +197,7 @@ def create_animation(output_dir='../output', save_file='tilted_view.mp4', fps=2,
     
     print("\nDone!")
 
-def create_static_frames(output_dir='../output', frames_dir='frames', 
+def create_static_frames(output_dir='../output', frames_dir='results/tilted_view/frames', 
                         angle_x=30, angle_z=20):
     """Create static PNG images for each snapshot from tilted view"""
     

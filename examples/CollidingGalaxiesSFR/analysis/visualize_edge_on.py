@@ -45,7 +45,7 @@ def load_snapshot(filename):
         
     return data
 
-def create_animation(output_dir='../output', save_file='edge_on.mp4', fps=2):
+def create_animation(output_dir='../output', save_file='results/edge_on/edge_on.mp4', fps=2):
     """Create edge-on animation (X-Z view)"""
     
     # Find all snapshot files
@@ -178,7 +178,7 @@ def create_animation(output_dir='../output', save_file='edge_on.mp4', fps=2):
     
     print("\nDone!")
 
-def create_static_frames(output_dir='../output', frames_dir='frames'):
+def create_static_frames(output_dir='../output', frames_dir='results/edge_on/frames'):
     """Create static PNG images for each snapshot - edge-on view"""
     
     # Create frames directory

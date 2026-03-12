@@ -33,7 +33,7 @@ def load_snapshot(filename):
         
     return data
 
-def create_animation(output_dir='../output', save_file='newstars_only.mp4', fps=2):
+def create_animation(output_dir='../output', save_file='results/newstars/newstars_only.mp4', fps=2):
     """Create animation showing only newly formed stars"""
     
     # Find all snapshot files
@@ -145,7 +145,7 @@ def create_animation(output_dir='../output', save_file='newstars_only.mp4', fps=
     
     print("\nDone!")
 
-def create_static_frames(output_dir='../output', frames_dir='frames'):
+def create_static_frames(output_dir='../output', frames_dir='results/newstars/frames'):
     """Create static PNG images for each snapshot - new stars only"""
     
     # Create frames directory
