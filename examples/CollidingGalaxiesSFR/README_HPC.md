@@ -296,13 +296,87 @@ examples/CollidingGalaxiesSFR/
 ├── job_hpc_slurm.sh          # SLURM job script
 ├── Gadget4                    # Compiled executable
 ├── TREECOOL                   # Cooling table
-├── output/                    # Simulation output
+├── output/                    # Simulation output (gitignored)
 │   ├── snapshot_*.hdf5       # Particle snapshots
 │   └── restartfiles/         # Checkpoint files
+├── analysis/                  # Visualization scripts (committed to git)
+│   ├── visualize_animation.py # Face-on view: all stars
+│   ├── visualize_edge_on.py   # Edge-on view (X-Z plane)
+│   ├── visualize_newstars.py  # Newly formed stars only
+│   ├── visualize_tilted.py    # Tilted 3D perspective
+│   └── results/               # Generated output (gitignored)
+│       ├── allstars/frames/   # PNG frames + galaxy_collision.gif
+│       ├── edge_on/frames/    # PNG frames + edge_on.gif
+│       ├── newstars/frames/   # PNG frames + newstars_only.gif
+│       └── tilted_view/frames/# PNG frames + tilted_view.gif
 ├── eos.txt                    # Equation of state log
 ├── sfrrate.txt               # Star formation rate log
 └── run_*.log                 # SLURM job logs
 ```
+
+## Analysis and Visualization
+
+The `analysis/` folder contains Python scripts for visualizing simulation snapshots. All scripts read from `output/` and write results to `analysis/results/`.
+
+### Scripts Overview
+
+| Script | View | What it shows |
+|---|---|---|
+| `visualize_animation.py` | Face-on (X-Y) | All stars: old disk/bulge (white) + newly formed (cyan) |
+| `visualize_edge_on.py` | Edge-on (X-Z) | Thin disk collision seen from the side |
+| `visualize_newstars.py` | Face-on (X-Y) | Newly formed stars only — highlights star formation bursts |
+| `visualize_tilted.py` | Tilted 3D | Rotated perspective showing disk structure (30° tilt, 20° rotation) |
+
+Each script:
+1. Creates 81 static PNG frames in `results/<view>/frames/`
+2. Assembles them into a GIF animation in `results/<view>/`
+3. Attempts MP4 output if ffmpeg is available, falls back to GIF otherwise
+
+### Running the Scripts
+
+Run from the `CollidingGalaxiesSFR/` directory:
+
+```bash
+cd examples/CollidingGalaxiesSFR
+
+# Run individual scripts
+python -u analysis/visualize_animation.py
+python -u analysis/visualize_edge_on.py
+python -u analysis/visualize_newstars.py
+python -u analysis/visualize_tilted.py
+```
+
+The `-u` flag gives unbuffered output so you see progress printed live.
+
+### Output Location
+
+Results are written to `analysis/results/` (not committed to git — generated files):
+
+```
+analysis/results/
+├── allstars/
+│   ├── frames/frame_000.png ... frame_080.png
+│   └── galaxy_collision.gif
+├── edge_on/
+│   ├── frames/frame_000.png ... frame_080.png
+│   └── edge_on.gif
+├── newstars/
+│   ├── frames/frame_000.png ... frame_080.png
+│   └── newstars_only.gif
+└── tilted_view/
+    ├── frames/frame_000.png ... frame_080.png
+    └── tilted_view.gif
+```
+
+### Installing ffmpeg (for MP4 output)
+
+By default the scripts produce GIF animations. To get MP4 instead:
+
+```bash
+sudo apt install ffmpeg
+```
+
+After that, rerunning any script will produce both frames and an MP4 file.
 
 ## Troubleshooting
 
