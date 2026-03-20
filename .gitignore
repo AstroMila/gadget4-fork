@@ -49,6 +49,9 @@ processes_*.txt
 *.pdf
 *.out
 
+# Allow committed analysis result plots (exception to *.png above)
+!examples/CollidingGalaxiesSFR/analysis/results/plots/*.png
+
 *.aux
 *.toc
 *.log
