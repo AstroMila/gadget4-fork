@@ -50,6 +50,14 @@ RESULTS_DIR    = 'results/plots'    # relative to analysis/  →  analysis/resul
 CENTRAL_RADIUS = 5.0                              # kpc sphere for central density
 SPHERE_VOLUME  = (4.0 / 3.0) * np.pi * CENTRAL_RADIUS ** 3   # kpc^3
 
+# Physical constants for temperature and metallicity conversion
+X_H       = 0.76                # hydrogen mass fraction
+GAMMA     = 5.0 / 3.0           # adiabatic index
+K_B       = 1.381e-16           # Boltzmann constant [erg/K]
+M_H       = 1.673e-24           # proton mass [g]
+U_TO_CGS  = 1e10                # InternalEnergy code unit → erg/g  ((km/s)^2)
+Z_SUN     = 0.0127              # solar metallicity mass fraction (Asplund 2009)
+
 # Plot colours
 COLOR_GAL1 = '#4C9BE8'   # blue  – Galaxy 1
 COLOR_GAL2 = '#E8784C'   # orange – Galaxy 2
@@ -137,6 +145,10 @@ def process_snapshot(filepath, id_maps, mass_table):
         cgas_mass  = [0.0, 0.0]
         star_mass  = [0.0, 0.0]
         cstar_mass = [0.0, 0.0]
+        gas_temp   = [0.0, 0.0]
+        gas_Z      = [0.0, 0.0]
+        star_Z_num = [0.0, 0.0]   # numerator:   sum(Z_i * m_i)
+        star_Z_den = [0.0, 0.0]   # denominator: sum(m_i)
 
         # ── Gas (PartType0) ────────────────────────────────────────────────────
         if 'PartType0' in f:
@@ -144,15 +156,26 @@ def process_snapshot(filepath, id_maps, mass_table):
             g_coords = f['PartType0/Coordinates'][:]
             g_masses = f['PartType0/Masses'][:]
             g_sfr    = f['PartType0/StarFormationRate'][:]
+            g_xe     = f['PartType0/ElectronAbundance'][:]
+            g_u      = f['PartType0/InternalEnergy'][:]
+            g_met    = f['PartType0/Metallicity'][:]
+
+            # Temperature: T = (γ-1) * u * μ * m_H / k_B
+            g_mu = 1.0 / (X_H * (1.0 + g_xe) + (1.0 - X_H) / 4.0)
+            g_T  = (GAMMA - 1.0) * g_u * U_TO_CGS * g_mu * M_H / K_B
 
             for gi, gal_id_arr in enumerate(id_maps.get('PartType0', (None, None))):
                 if gal_id_arr is None:
                     continue
                 mask = np.isin(g_ids, gal_id_arr)
-                gas_mass[gi]  = float(g_masses[mask].sum())
+                m    = g_masses[mask]
+                gas_mass[gi]  = float(m.sum())
                 sfr_total[gi] = float(g_sfr[mask].sum())
                 dist = np.linalg.norm(g_coords[mask] - centers[gi], axis=1)
-                cgas_mass[gi] = float(g_masses[mask][dist < CENTRAL_RADIUS].sum())
+                cgas_mass[gi] = float(m[dist < CENTRAL_RADIUS].sum())
+                if m.sum() > 0:
+                    gas_temp[gi] = float((g_T[mask] * m).sum() / m.sum())
+                    gas_Z[gi]    = float((g_met[mask] * m).sum() / m.sum()) / Z_SUN
 
         # ── Pre-existing stars: disk (PartType2) and bulge (PartType3) ─────────
         for ptype, mp in (('PartType2', mass_table[2]),
@@ -161,26 +184,36 @@ def process_snapshot(filepath, id_maps, mass_table):
                 continue
             s_ids    = f[f'{ptype}/ParticleIDs'][:]
             s_coords = f[f'{ptype}/Coordinates'][:]
+            s_met    = f[f'{ptype}/Metallicity'][:]
             for gi, gal_id_arr in enumerate(id_maps[ptype]):
                 mask   = np.isin(s_ids, gal_id_arr)
                 n_part = int(mask.sum())
-                star_mass[gi] += n_part * float(mp)
+                m_tot  = n_part * float(mp)
+                star_mass[gi] += m_tot
                 dist = np.linalg.norm(s_coords[mask] - centers[gi], axis=1)
                 cstar_mass[gi] += (dist < CENTRAL_RADIUS).sum() * float(mp)
+                if m_tot > 0:
+                    star_Z_num[gi] += float((s_met[mask] * float(mp)).sum())
+                    star_Z_den[gi] += m_tot
 
         # ── Newly formed stars (PartType4) – assign by nearest galaxy center ───
         if 'PartType4' in f:
             n4_coords = f['PartType4/Coordinates'][:]
             n4_masses = f['PartType4/Masses'][:]
+            n4_met    = f['PartType4/Metallicity'][:]
             dist1 = np.linalg.norm(n4_coords - c1, axis=1)
             dist2 = np.linalg.norm(n4_coords - c2, axis=1)
 
             for gi, n4_mask in enumerate([dist1 <= dist2, dist2 < dist1]):
                 n4m = n4_masses[n4_mask]
                 n4c = n4_coords[n4_mask]
+                n4z = n4_met[n4_mask]
                 star_mass[gi] += float(n4m.sum())
                 dist_cen = np.linalg.norm(n4c - centers[gi], axis=1)
                 cstar_mass[gi] += float(n4m[dist_cen < CENTRAL_RADIUS].sum())
+                if n4m.sum() > 0:
+                    star_Z_num[gi] += float((n4z * n4m).sum())
+                    star_Z_den[gi] += float(n4m.sum())
 
     return {
         'time': time,
@@ -190,6 +223,9 @@ def process_snapshot(filepath, id_maps, mass_table):
             'sfr':        sfr_total[0],
             'cgas_dens':  cgas_mass[0]  / SPHERE_VOLUME,
             'cstar_dens': cstar_mass[0] / SPHERE_VOLUME,
+            'gas_temp':   gas_temp[0],
+            'gas_Z':      gas_Z[0],
+            'star_Z':     star_Z_num[0] / star_Z_den[0] / Z_SUN if star_Z_den[0] > 0 else 0.0,
         },
         'gal2': {
             'gas_mass':   gas_mass[1],
@@ -197,6 +233,9 @@ def process_snapshot(filepath, id_maps, mass_table):
             'sfr':        sfr_total[1],
             'cgas_dens':  cgas_mass[1]  / SPHERE_VOLUME,
             'cstar_dens': cstar_mass[1] / SPHERE_VOLUME,
+            'gas_temp':   gas_temp[1],
+            'gas_Z':      gas_Z[1],
+            'star_Z':     star_Z_num[1] / star_Z_den[1] / Z_SUN if star_Z_den[1] > 0 else 0.0,
         },
     }
 
@@ -222,6 +261,47 @@ def make_two_panel_plot(times, g1_vals, g2_vals, ylabel, title, filename):
         ax.set_xlim(times[0], times[-1])
 
     ax1.set_ylabel(ylabel, fontsize=12)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"  Saved: {filename}")
+
+
+def make_age_distribution(snapshot_file, bulge_gal1_ids, bulge_gal2_ids, filename):
+    """
+    Histogram of StellarFormationTime for PartType4 from the last snapshot.
+    Two panels: Galaxy 1 (left), Galaxy 2 (right).
+    Stars assigned to nearest galaxy center (same logic as process_snapshot).
+    """
+    with h5py.File(snapshot_file, 'r') as f:
+        if 'PartType4' not in f:
+            print("  No newly formed stars in last snapshot, skipping age distribution.")
+            return
+        n4_coords = f['PartType4/Coordinates'][:]
+        n4_sft    = f['PartType4/StellarFormationTime'][:]
+        c1, c2    = get_galaxy_centers(f, bulge_gal1_ids, bulge_gal2_ids)
+
+    dist1    = np.linalg.norm(n4_coords - c1, axis=1)
+    dist2    = np.linalg.norm(n4_coords - c2, axis=1)
+    sft_gal1 = n4_sft[dist1 <= dist2]
+    sft_gal2 = n4_sft[dist2 <  dist1]
+
+    bins = np.linspace(0.0, 4.0, 41)   # 0–4 Gyr, 40 bins of 0.1 Gyr each
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    fig.suptitle('Age Distribution of Newly Formed Stars\n'
+                 '(StellarFormationTime, final snapshot)', fontsize=14, fontweight='bold')
+
+    for ax, sft, label, color in (
+        (ax1, sft_gal1, 'Galaxy 1  (initially X < 0)', COLOR_GAL1),
+        (ax2, sft_gal2, 'Galaxy 2  (initially X > 0)', COLOR_GAL2),
+    ):
+        ax.hist(sft, bins=bins, color=color, alpha=0.8, edgecolor='none')
+        ax.set_xlabel('Formation Time (Gyr)', fontsize=12)
+        ax.set_title(f'{label}\n{len(sft):,} stars formed', fontsize=11, color=color)
+        ax.grid(True, alpha=0.3)
+
+    ax1.set_ylabel('Number of Stars  (per 0.1 Gyr bin)', fontsize=12)
     plt.tight_layout()
     plt.savefig(filename, dpi=150, bbox_inches='tight')
     plt.close()
@@ -359,6 +439,53 @@ def main():
         ylabel=fr'Central Stellar Density  ($10^{{10}}\,M_\odot\,\mathrm{{kpc}}^{{-3}}$)',
         title=f'Central Stellar Density vs Time  (within {CENTRAL_RADIUS:.0f} kpc of galaxy center)',
         filename=os.path.join(RESULTS_DIR, '05_central_stellar_density.png'),
+    )
+
+    # ── 6. Gas temperature ──────────────────────────────────────────────────────
+    make_two_panel_plot(
+        times,
+        ts('gas_temp', 'gal1'), ts('gas_temp', 'gal2'),
+        ylabel='Mass-weighted Gas Temperature  (K)',
+        title='Gas Temperature vs Time',
+        filename=os.path.join(RESULTS_DIR, '06_gas_temperature.png'),
+    )
+
+    # ── 7. Gas metallicity ──────────────────────────────────────────────────────
+    make_two_panel_plot(
+        times,
+        ts('gas_Z', 'gal1'), ts('gas_Z', 'gal2'),
+        ylabel=r'Gas Metallicity  ($Z\,/\,Z_\odot$)',
+        title='Gas Metallicity vs Time  (mass-weighted mean)',
+        filename=os.path.join(RESULTS_DIR, '07_gas_metallicity.png'),
+    )
+
+    # ── 8. Stellar metallicity ──────────────────────────────────────────────────
+    make_two_panel_plot(
+        times,
+        ts('star_Z', 'gal1'), ts('star_Z', 'gal2'),
+        ylabel=r'Stellar Metallicity  ($Z\,/\,Z_\odot$)',
+        title='Stellar Metallicity vs Time  (mass-weighted mean, all stellar components)',
+        filename=os.path.join(RESULTS_DIR, '08_stellar_metallicity.png'),
+    )
+
+    # ── 9. Star formation efficiency ────────────────────────────────────────────
+    sfe_g1 = np.where(ts('gas_mass', 'gal1') > 0,
+                      ts('sfr', 'gal1') / ts('gas_mass', 'gal1'), 0.0)
+    sfe_g2 = np.where(ts('gas_mass', 'gal2') > 0,
+                      ts('sfr', 'gal2') / ts('gas_mass', 'gal2'), 0.0)
+    make_two_panel_plot(
+        times, sfe_g1, sfe_g2,
+        ylabel=r'SFE  ($M_\odot\,\mathrm{yr}^{-1}\,/\,10^{10}\,M_\odot$)',
+        title='Star Formation Efficiency vs Time  (SFR / Gas Mass)',
+        filename=os.path.join(RESULTS_DIR, '09_star_formation_efficiency.png'),
+    )
+
+    # ── 10. Age distribution of newly formed stars ───────────────────────────────
+    bulge_ids = id_maps['PartType3']
+    make_age_distribution(
+        snapshot_files[-1],
+        bulge_ids[0], bulge_ids[1],
+        filename=os.path.join(RESULTS_DIR, '10_star_age_distribution.png'),
     )
 
     print(f"\nAll plots saved to analysis/{RESULTS_DIR}/")
